@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IT Ticket Triage</title>
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--fg:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#2563eb;--bar:#93c5fd;
+--p1:#dc2626;--p2:#ea580c;--p3:#ca8a04;--p4:#16a34a;--heat:37,99,235;--chip:#eef2ff}
+@media (prefers-color-scheme:dark){:root{--bg:#0b1020;--panel:#111827;--fg:#e5e7eb;--muted:#94a3b8;--line:#1f2937;
+--accent:#60a5fa;--bar:#1d4ed8;--p1:#f87171;--p2:#fb923c;--p3:#facc15;--p4:#4ade80;--heat:96,165,250;--chip:#1e293b}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1200px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:20px;margin:0}h2{font-size:16px;margin:28px 0 10px}.muted{color:var(--muted)}
+header{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+@media (max-width:860px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+textarea{width:100%;min-height:150px;border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg);color:var(--fg);font:inherit;resize:vertical}
+button{margin-top:8px;padding:9px 16px;border:0;border-radius:8px;background:var(--accent);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-weight:600;font-size:12px;color:#fff}
+.P1{background:var(--p1)}.P2{background:var(--p2)}.P3{background:var(--p3);color:#111}.P4{background:var(--p4);color:#111}
+.cat{display:inline-block;padding:2px 10px;border-radius:999px;background:var(--chip);font-size:12px;font-weight:600}
+.bars div{display:grid;grid-template-columns:90px 1fr 48px;gap:8px;align-items:center;margin:3px 0;font-size:13px}
+.bars i{display:block;height:10px;border-radius:5px;background:var(--bar)}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--muted);font-size:12px;font-weight:600}
+.scroll{overflow:auto;max-height:420px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.tile b{display:block;font-size:22px}.tile span{font-size:12px;color:var(--muted)}
+.cm{overflow-x:auto}.cm table{width:auto}.cm td{text-align:center;min-width:44px;font-size:12px}
+.cm th{font-size:11px;white-space:nowrap}.ok{color:var(--p4)}.bad{color:var(--p1)}
+</style>
+</head>
+<body>
+<main>
+  <header><h1>IT Ticket Triage</h1><span class="muted" id="health">loading…</span></header>
+  <p class="muted">Category + ITIL priority from the ticket text, on this device with ONNX Runtime.</p>
+  <div class="grid">
+    <div class="panel">
+      <b>Triage a ticket</b>
+      <textarea id="text">Subject: Line 3 label printer printing garbage
+Since 6am the Zebra printer on packaging line 3 prints random characters on every label. The whole shift (about 20 people) can't ship anything and the truck leaves at 2pm.</textarea>
+      <button id="go">Classify</button>
+      <div id="result"></div>
+    </div>
+    <div class="panel"><b>Queue</b> <span class="muted">(held-out test tickets, sorted by predicted priority)</span>
+      <div class="scroll"><table><thead><tr><th>Pred.</th><th>Category</th><th>Ticket</th><th>True</th></tr></thead><tbody id="queue"></tbody></table></div>
+    </div>
+  </div>
+  <h2>Model quality</h2>
+  <div class="tiles" id="tiles"></div>
+  <div class="grid" style="margin-top:14px">
+    <div class="panel cm"><b>Category confusion (synthetic test)</b><div id="cm_cat"></div></div>
+    <div class="panel cm"><b>Priority confusion (synthetic test)</b><div id="cm_pri"></div></div>
+  </div>
+  <div class="panel cm" style="margin-top:14px"><b>Category confusion (external KameronB set)</b><div id="cm_ext"></div></div>
+  <div class="panel" style="margin-top:14px"><b>Variants</b><div class="scroll"><table id="variants"></table></div></div>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+const pct = (x) => x == null ? "—" : (100 * x).toFixed(1) + "%";
+const bars = (probs) => `<div class="bars">${Object.entries(probs).sort((a,b)=>b[1]-a[1]).map(([k,v]) =>
+  `<div><span>${esc(k)}</span><i style="width:${Math.max(2, 100*v)}%"></i><span>${(100*v).toFixed(1)}%</span></div>`).join("")}</div>`;
+
+fetch("/health").then(r => r.json()).then(h => $("health").textContent = `${h.model} · ${h.providers[0]}`);
+
+async function classify() {
+  const r = await fetch("/classify", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({text: $("text").value})});
+  const p = await r.json();
+  if (!r.ok) { $("result").innerHTML = `<p class="bad">${esc(JSON.stringify(p.detail))}</p>`; return; }
+  $("result").innerHTML = `<p><span class="pill ${p.priority}">${p.priority} · ${p.priority_name}</span>
+    <span class="cat">${esc(p.category)}</span> <span class="muted">${p.latency_ms.toFixed(1)} ms</span></p>
+    <div class="grid"><div><b>Category</b>${bars(p.category_probs)}</div><div><b>Priority</b>${bars(p.priority_probs)}</div></div>`;
+}
+$("go").onclick = classify; classify();
+
+fetch("/queue").then(r => r.json()).then(q => {
+  q.sort((a, b) => a.prediction.priority.localeCompare(b.prediction.priority) || b.prediction.priority_confidence - a.prediction.priority_confidence);
+  $("queue").innerHTML = q.map(t => `<tr><td><span class="pill ${t.prediction.priority}">${t.prediction.priority}</span></td>
+    <td><span class="cat">${esc(t.prediction.category)}</span></td><td>${esc(t.text.split("\n")[0].slice(0, 70))}</td>
+    <td class="${t.prediction.category === t.category && t.prediction.priority === t.priority ? "ok" : "bad"}">${esc(t.category)} · ${esc(t.priority)}</td></tr>`).join("");
+});
+
+function heat(rep) {
+  const m = rep.confusion, labels = rep.labels, rowMax = m.map(r => Math.max(1, ...r));
+  return `<table><tr><th>true \\ pred</th>${labels.map(l => `<th>${esc(l)}</th>`).join("")}<th>recall</th></tr>` +
+    m.map((row, i) => `<tr><th>${esc(labels[i])}</th>${row.map((v, j) =>
+      `<td style="background:rgba(var(--heat),${(v / rowMax[i] * 0.85).toFixed(2)});${v / rowMax[i] > .55 ? "color:#fff" : ""}">${v || ""}</td>`).join("")}
+      <td>${pct(rep.per_class[labels[i]].recall)}</td></tr>`).join("") + `</table>`;
+}
+
+fetch("/metrics").then(r => r.ok ? r.json() : null).then(m => {
+  if (!m) { $("tiles").innerHTML = "<p class='muted'>Run <code>triage evaluate --out results/…json</code> to see metrics.</p>"; return; }
+  const best = m.variants.fp32.cpu;
+  $("tiles").innerHTML = [[pct(best.test_category.accuracy), "category accuracy (test)"], [best.test_category.macro_f1.toFixed(3), "category macro-F1"],
+    [pct(best.test_priority.accuracy), "priority accuracy (test)"], [pct(best.test_priority_within_one), "priority within ±1 level"],
+    [best.external_category ? pct(best.external_category.accuracy) : "—", "category accuracy (external set)"],
+    [best.latency_ms.p50.toFixed(1) + " ms", "latency p50 (FP32, CPU)"]].map(([v, l]) => `<div class="tile"><b>${v}</b><span>${l}</span></div>`).join("");
+  $("cm_cat").innerHTML = heat(best.test_category);
+  $("cm_pri").innerHTML = heat(best.test_priority);
+  $("cm_ext").innerHTML = best.external_category ? heat(best.external_category) : "<p class='muted'>not evaluated</p>";
+  const rows = [];
+  for (const [variant, byEp] of Object.entries(m.variants)) for (const [ep, r] of Object.entries(byEp))
+    rows.push(`<tr><td>${variant}</td><td>${ep}</td><td>${pct(r.test_category.accuracy)}</td><td>${pct(r.test_priority.accuracy)}</td>
+      <td>${r.external_category ? pct(r.external_category.accuracy) : "—"}</td><td>${r.latency_ms.p50.toFixed(2)} ms</td><td>${r.size_mb.toFixed(1)} MB</td></tr>`);
+  if (m.baseline) rows.push(`<tr><td>TF-IDF + LogReg</td><td>sklearn</td><td>${pct(m.baseline.test_category.accuracy)}</td><td>${pct(m.baseline.test_priority.accuracy)}</td>
+      <td>${m.baseline.external_category ? pct(m.baseline.external_category.accuracy) : "—"}</td><td>${m.baseline.latency_ms.mean.toFixed(2)} ms (mean)</td><td>—</td></tr>`);
+  $("variants").innerHTML = `<tr><th>Variant</th><th>EP</th><th>Category acc</th><th>Priority acc</th><th>External cat acc</th><th>Latency p50</th><th>Size</th></tr>` + rows.join("");
+});
+</script>
+</body>
+</html>
