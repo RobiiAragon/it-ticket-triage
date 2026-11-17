@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python: ["3.11", "3.12"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+      - name: Lint
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: Unit tests (tiny ONNX model, fake LLM server; no downloads)
+        run: pytest -q -W ignore::DeprecationWarning
+      - name: Released INT8 model on the committed test split (quality gate)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v0.1.0 -R "${{ github.repository }}" -p triage.int8.onnx -D models
+          python -c "import hashlib,json; m=json.load(open('models/manifest.json'))['triage.int8.onnx']; assert hashlib.sha256(open('models/triage.int8.onnx','rb').read()).hexdigest()==m['sha256']"
+          triage evaluate --variants int8 --providers cpu --out ci-eval.json
+          python - <<'PY'
+          import json
+          r = json.load(open("ci-eval.json"))["variants"]["int8"]["cpu"]
+          assert r["test_category"]["accuracy"] >= 0.95, r["test_category"]["accuracy"]
+          assert r["test_priority_within_one"] >= 0.95, r["test_priority_within_one"]
+          print("quality gate passed")
+          PY
