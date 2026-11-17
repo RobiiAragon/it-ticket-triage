@@ -180,6 +180,10 @@ bajan de 95%**.
 - [ ] Tickets en español (MiniLM multilingüe) para una mesa de ayuda bilingüe
 - [ ] Correr el modelo W8A16 con el EP QNN en Snapdragon vía Qualcomm AI Hub (ver edge-ai-bench)
 - [ ] Ruteo por confianza: mandar tickets de baja confianza a una cola humana
+- [ ] Reglas de política encima del modelo: la prioridad se aprende solo del impacto/urgencia
+      escritos en el texto, así que *"le di clic a un link y escribí mi contraseña"* (sin impacto
+      explícito) sale como security · P4. Una mesa real aplicaría reglas como "credenciales
+      comprometidas ≥ P2".
 
 ## Licencia
 

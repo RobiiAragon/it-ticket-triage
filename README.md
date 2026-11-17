@@ -194,6 +194,9 @@ drops below 95%**.
 - [ ] Spanish tickets (multilingual MiniLM) for a bilingual service desk
 - [ ] QNN EP run of the W8A16 model on Snapdragon via Qualcomm AI Hub (see edge-ai-bench)
 - [ ] Confidence-based routing: send low-confidence tickets to a human queue
+- [ ] Policy floors on top of the model: priority is learned only from impact/urgency stated in
+      the text, so *"I clicked a link and typed my password"* (no stated impact) comes out as
+      security · P4. A real desk would apply rules like "credential compromise ≥ P2".
 
 ## License
 
