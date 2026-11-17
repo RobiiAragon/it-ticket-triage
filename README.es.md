@@ -119,7 +119,9 @@ ticket individual (batch 1), p50 sobre 200 tickets, incluyendo la tokenización.
 | MiniLM W8A16 (QDQ) | CPU | 99.0% | 77.8% (0.776) | 97.0% | 51.2% | 6.69 ms | 33.3 MB |
 | MiniLM W8A16 | CoreML | 99.0% | 78.0% | 97.0% | 51.3% | 26.70 ms | 33.3 MB |
 
-Recall de prioridad por clase (FP32): P1 86.8%, P2 81.9%, P3 62.7%, P4 91.5%.
+Recall de prioridad por clase (FP32): P1 86.8%, P2 81.9%, P3 62.7%, P4 91.5%. Los resultados INT8 dinámicos varían
+un poco entre CPUs y builds de ORT: en los runners ubuntu/macOS de GitHub el mismo modelo INT8
+da 99.5% en categoría y 75.3–75.8% en prioridad.
 
 ### Lo que aprendí
 

@@ -130,7 +130,9 @@ tokenization. Raw data: [`results/mac-m5max.json`](results/mac-m5max.json).
 | MiniLM W8A16 (QDQ) | CPU | 99.0% | 77.8% (0.776) | 97.0% | 51.2% | 6.69 ms | 33.3 MB |
 | MiniLM W8A16 | CoreML | 99.0% | 78.0% | 97.0% | 51.3% | 26.70 ms | 33.3 MB |
 
-Priority recall per class (FP32): P1 86.8%, P2 81.9%, P3 62.7%, P4 91.5%. The confusion
+Priority recall per class (FP32): P1 86.8%, P2 81.9%, P3 62.7%, P4 91.5%. Dynamic-INT8 results shift slightly
+across CPUs and ORT builds: on GitHub's ubuntu/macOS runners the same INT8 model scores 99.5%
+category and 75.3–75.8% priority. The confusion
 matrices are in the dashboard and in the results JSON.
 
 ### What I learned
