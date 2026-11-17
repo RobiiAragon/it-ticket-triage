@@ -7,3 +7,5 @@ dist/
 build/
 models/*.onnx
 /results/local-*.json
+*.data
+sym_shape_infer_temp.onnx
