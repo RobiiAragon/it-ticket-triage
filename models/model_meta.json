@@ -1,0 +1,87 @@
+{
+  "base_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "base_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+  "max_len": 160,
+  "categories": [
+    "access",
+    "network",
+    "email",
+    "hardware",
+    "software",
+    "printing",
+    "security"
+  ],
+  "priorities": [
+    "P1",
+    "P2",
+    "P3",
+    "P4"
+  ],
+  "epochs": 10,
+  "lr": 5e-05,
+  "batch": 32,
+  "device": "mps",
+  "train_seconds": 41.38323999999557,
+  "history": [
+    {
+      "epoch": 1,
+      "loss": 2.9896588398419333,
+      "val_category_acc": 0.8787878787878788,
+      "val_priority_acc": 0.3939393939393939
+    },
+    {
+      "epoch": 2,
+      "loss": 1.4464821154663694,
+      "val_category_acc": 0.9873737373737373,
+      "val_priority_acc": 0.4671717171717172
+    },
+    {
+      "epoch": 3,
+      "loss": 1.0090031178189,
+      "val_category_acc": 0.9873737373737373,
+      "val_priority_acc": 0.5656565656565656
+    },
+    {
+      "epoch": 4,
+      "loss": 0.829054955964789,
+      "val_category_acc": 0.9823232323232324,
+      "val_priority_acc": 0.6161616161616161
+    },
+    {
+      "epoch": 5,
+      "loss": 0.6820198140594882,
+      "val_category_acc": 0.9924242424242424,
+      "val_priority_acc": 0.6919191919191919
+    },
+    {
+      "epoch": 6,
+      "loss": 0.5901368894517128,
+      "val_category_acc": 0.98989898989899,
+      "val_priority_acc": 0.696969696969697
+    },
+    {
+      "epoch": 7,
+      "loss": 0.5012685630016807,
+      "val_category_acc": 0.98989898989899,
+      "val_priority_acc": 0.7222222222222222
+    },
+    {
+      "epoch": 8,
+      "loss": 0.4379292722610357,
+      "val_category_acc": 0.9924242424242424,
+      "val_priority_acc": 0.7550505050505051
+    },
+    {
+      "epoch": 9,
+      "loss": 0.39583899218289986,
+      "val_category_acc": 0.9924242424242424,
+      "val_priority_acc": 0.7803030303030303
+    },
+    {
+      "epoch": 10,
+      "loss": 0.36740983395157195,
+      "val_category_acc": 0.9924242424242424,
+      "val_priority_acc": 0.7676767676767676
+    }
+  ]
+}

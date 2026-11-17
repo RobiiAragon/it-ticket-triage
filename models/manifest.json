@@ -1,0 +1,14 @@
+{
+  "triage.fp32.onnx": {
+    "sha256": "d1517cd861f3f243a1e174e479837f0c8b88581842c4ba1d4f3a1c688e42b934",
+    "bytes": 90417469
+  },
+  "triage.int8.onnx": {
+    "sha256": "1f09344c3ad18394a30df7df9aeb9c441e2dbfb87a726f9c2f8cd04e0b2a8dce",
+    "bytes": 22906188
+  },
+  "triage.w8a16.onnx": {
+    "sha256": "f3dd8579999ac0acf02bc3f3c193d172596711ea779ea3d17160300b5c17e893",
+    "bytes": 34934239
+  }
+}
